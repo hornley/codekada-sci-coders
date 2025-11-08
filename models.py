@@ -32,6 +32,10 @@ class Preferences(db.Model):
     name = db.Column(db.String(80), unique=True, nullable=False)
     type = db.Column(db.Enum('diet', 'health', name='preferences_enum'), nullable=False)
 
+class ingredients(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(80), unique=True, nullable=False)
+
 # Association tables (composite entities)
 user_allergens = db.Table(
     'user_allergens',
