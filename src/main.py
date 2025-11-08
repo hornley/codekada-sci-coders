@@ -8,7 +8,7 @@ import time
 from typing import Dict, Optional
 from dotenv import load_dotenv
 
-from src.ocr_detector import OCRDetector
+from src.vision_ocr_detector import VisionOCRDetector
 from src.classifier import ProductClassifier
 from src.ingredient_analyzer import IngredientAnalyzer
 from src.models import ProductAnalysisResponse
@@ -23,6 +23,7 @@ class IngredientIntelligenceAnalyzer:
     def __init__(
         self,
         openai_api_key: Optional[str] = None,
+        ocr_method: str = 'vision',
         ocr_lang: str = 'en',
         use_gpu: bool = False,
         max_image_dimension: int = 1920
@@ -32,17 +33,35 @@ class IngredientIntelligenceAnalyzer:
         
         Args:
             openai_api_key: OpenAI API key
-            ocr_lang: Language for OCR
-            use_gpu: Whether to use GPU for OCR
-            max_image_dimension: Max image size for OCR processing (default: 1920)
-                                Recommended: 1280 (fast), 1920 (balanced), 2560 (accurate)
+            ocr_method: OCR method to use - 'vision' (OpenAI Vision API - default) or 'paddleocr' (local OCR)
+            ocr_lang: Language for OCR (only used with paddleocr)
+            use_gpu: Whether to use GPU for OCR (only used with paddleocr)
+            max_image_dimension: Max image size for OCR processing (only used with paddleocr)
         """
-        # Initialize components
-        self.ocr_detector = OCRDetector(
-            lang=ocr_lang, 
-            use_gpu=use_gpu,
-            max_image_dimension=max_image_dimension
-        )
+        # Initialize OCR detector based on method
+        self.ocr_method = ocr_method.lower()
+        
+        if self.ocr_method == 'vision':
+            print("   ℹ️  Using OpenAI Vision API for OCR (recommended)")
+            self.ocr_detector = VisionOCRDetector(api_key=openai_api_key)
+        elif self.ocr_method == 'paddleocr':
+            print("   ℹ️  Using PaddleOCR for local OCR")
+            try:
+                from src.ocr_detector import OCRDetector
+                self.ocr_detector = OCRDetector(
+                    lang=ocr_lang, 
+                    use_gpu=use_gpu,
+                    max_image_dimension=max_image_dimension
+                )
+            except ImportError:
+                raise ImportError(
+                    "PaddleOCR dependencies not installed. "
+                    "Install with: pip install paddleocr paddlepaddle opencv-python\n"
+                    "Or use Vision API: ocr_method='vision'"
+                )
+        else:
+            raise ValueError(f"Invalid ocr_method: {ocr_method}. Use 'vision' or 'paddleocr'")
+        
         self.classifier = ProductClassifier()
         self.analyzer = IngredientAnalyzer(api_key=openai_api_key)
     

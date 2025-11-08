@@ -52,6 +52,8 @@ images/
 # Output files
 output/
 results/
+preprocessed_images/
+legacy_paddleocr/
 *.json
 !package.json
 

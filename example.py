@@ -137,9 +137,34 @@ def example_command_line():
             print(f"❌ Error: Image not found: {image_path}")
             return
         
-        analyzer = IngredientIntelligenceAnalyzer()
+        # Use Vision API by default (recommended)
+        analyzer = IngredientIntelligenceAnalyzer(ocr_method='vision')
+        
+        # Or use PaddleOCR (uncomment below):
+        # analyzer = IngredientIntelligenceAnalyzer(ocr_method='paddleocr', max_image_dimension=1920)
+        
         result = analyzer.analyze_product_image(image_path)
+        
+        # Display results
         pretty_print_results(result.model_dump())
+        
+        # Save to JSON file
+        import os
+        from datetime import datetime
+        
+        # Create output directory
+        output_dir = "results"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Generate filename
+        base_name = os.path.splitext(os.path.basename(image_path))[0]
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        json_filename = f"{base_name}_{timestamp}.json"
+        json_path = os.path.join(output_dir, json_filename)
+        
+        # Save to JSON
+        save_results_to_json(result.model_dump(), json_path)
+        print(f"\n💾 Results saved to: {json_path}\n")
 
 
 def example_batch_processing():
