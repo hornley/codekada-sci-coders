@@ -336,10 +336,14 @@ class UserProfileManager:
         # Extract personal info
         personal_info = data.get('personal_info', {})
         
+        # Get values from either personal_info or top level (for flexibility)
+        full_name = personal_info.get('full_name') or data.get('full_name', '')
+        age = personal_info.get('age') or data.get('age')
+        
         # Parse birth date
         birth_date = None
-        if 'birth_date' in personal_info or 'birthday' in personal_info:
-            birth_str = personal_info.get('birth_date') or personal_info.get('birthday')
+        birth_str = personal_info.get('birth_date') or personal_info.get('birthday') or data.get('birthday')
+        if birth_str:
             try:
                 birth_date = datetime.strptime(birth_str, '%Y-%m-%d').date()
             except:
@@ -348,8 +352,8 @@ class UserProfileManager:
         # Create user
         user = UserProfileManager.create_user(
             username=data.get('username') or data.get('email') or f"user_{uuid.uuid4().hex[:8]}",
-            full_name=personal_info.get('full_name', ''),
-            age=personal_info.get('age'),
+            full_name=full_name,
+            age=age,
             birth_date=birth_date,
             email=data.get('email') or personal_info.get('email')
         )

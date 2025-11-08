@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Product Analyzer - Rekada Lens</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body class="bg-light">
+    
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+      <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+          <i class="fas fa-check-circle text-success me-2"></i>
+          <strong class="me-auto">Rekada Lens</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          <!-- Toast message will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="bg-success text-white py-4">
+      <div class="container">
+        <button class="btn btn-outline-light mb-3" id="back-to-dashboard" onclick="window.location.href='{{ url_for('dashboard') }}'">
+          <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </button>
+        <h1 class="display-6 fw-bold mb-2">Product Analyzer</h1>
+        <p class="lead mb-0">Select a category to analyze products</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-10">
+          <!-- Category Tabs -->
+          <ul class="nav nav-pills nav-fill mb-4" id="category-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="food-drinks-tab" data-bs-toggle="pill" data-bs-target="#food-drinks" type="button" role="tab">
+                <i class="fas fa-utensils me-2"></i>Food & Drinks
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="beauty-tab" data-bs-toggle="pill" data-bs-target="#beauty" type="button" role="tab">
+                <i class="fas fa-sparkles me-2"></i>Beauty Products
+              </button>
+            </li>
+          </ul>
+
+          <!-- Tab Content -->
+          <div class="tab-content" id="category-content">
+            <!-- Food & Drinks Tab -->
+            <div class="tab-pane fade show active" id="food-drinks" role="tabpanel">
+              <div class="row g-4 mb-5">
+                <!-- Food Products Card -->
+                <div class="col-md-6">
+                  <div class="card h-100 shadow-hover border-0 rounded-4 cursor-pointer" data-category="food">
+                    <div class="card-header bg-transparent border-0 p-4">
+                      <div class="d-flex align-items-center gap-3">
+                        <div class="bg-warning bg-opacity-15 rounded-3 p-3">
+                          <i class="fas fa-coffee text-warning fs-2"></i>
+                        </div>
+                        <div>
+                          <h4 class="card-title fw-bold mb-1">Food Products</h4>
+                          <p class="card-subtitle text-muted mb-0">Analyze packaged foods and snacks</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-body pt-0">
+                      <p class="text-muted mb-4">
+                        Get detailed nutritional analysis, allergen warnings, and health recommendations for food products.
+                      </p>
+                      <button class="btn btn-warning w-100 rounded-pill fw-semibold analyze-btn" data-category="food">
+                        <i class="fas fa-search me-2"></i>Analyze Food
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Drinks & Beverages Card -->
+                <div class="col-md-6">
+                  <div class="card h-100 shadow-hover border-0 rounded-4 cursor-pointer" data-category="drinks">
+                    <div class="card-header bg-transparent border-0 p-4">
+                      <div class="d-flex align-items-center gap-3">
+                        <div class="bg-info bg-opacity-15 rounded-3 p-3">
+                          <i class="fas fa-tint text-info fs-2"></i>
+                        </div>
+                        <div>
+                          <h4 class="card-title fw-bold mb-1">Drinks & Beverages</h4>
+                          <p class="card-subtitle text-muted mb-0">Analyze drinks and beverages</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-body pt-0">
+                      <p class="text-muted mb-4">
+                        Check sugar content, artificial sweeteners, and ingredients in your favorite drinks.
+                      </p>
+                      <button class="btn btn-info w-100 rounded-pill fw-semibold analyze-btn" data-category="drinks">
+                        <i class="fas fa-search me-2"></i>Analyze Drinks
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Food & Drinks Analysis Info -->
+              <div class="card border-0 rounded-4 shadow-sm">
+                <div class="card-body p-4">
+                  <h5 class="fw-bold text-dark mb-4">What we analyze in Food & Drinks:</h5>
+                  <div class="row">
+                    <div class="col-lg-6">
+                      <ul class="list-unstyled">
+                        <li class="d-flex align-items-start gap-2 mb-3">
+                          <i class="fas fa-check-circle text-success mt-1"></i>
+                          <span>Nutritional values (calories, protein, carbs, fats, sodium, sugar)</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2 mb-3">
+                          <i class="fas fa-check-circle text-success mt-1"></i>
+                          <span>Allergen detection (animal-derived, plant-derived ingredients)</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2 mb-3">
+                          <i class="fas fa-check-circle text-success mt-1"></i>
+                          <span>Preservatives and artificial additives</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="col-lg-6">
+                      <ul class="list-unstyled">
+                        <li class="d-flex align-items-start gap-2 mb-3">
+                          <i class="fas fa-check-circle text-success mt-1"></i>
+                          <span>Dietary compliance (vegan, halal, kosher, etc.)</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2 mb-3">
+                          <i class="fas fa-check-circle text-success mt-1"></i>
+                          <span>Health recommendations based on your profile</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Beauty Products Tab -->
+            <div class="tab-pane fade" id="beauty" role="tabpanel">
+              <div class="row justify-content-center mb-5">
+                <div class="col-lg-8">
+                  <!-- Beauty Products Card -->
+                  <div class="card h-100 shadow-hover border-0 rounded-4 cursor-pointer" data-category="beauty">
+                    <div class="card-header bg-transparent border-0 p-4">
+                      <div class="d-flex align-items-center gap-3">
+                        <div class="bg-danger bg-opacity-15 rounded-3 p-3">
+                          <i class="fas fa-sparkles text-danger fs-2"></i>
+                        </div>
+                        <div>
+                          <h4 class="card-title fw-bold mb-1">Beauty & Personal Care</h4>
+                          <p class="card-subtitle text-muted mb-0">Analyze cosmetics and skincare products</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-body pt-0">
+                      <p class="text-muted mb-4">
+                        Detect harmful chemicals, irritants, and allergens in beauty and personal care products.
+                      </p>
+                      <button class="btn btn-danger w-100 rounded-pill fw-semibold analyze-btn" data-category="beauty">
+                        <i class="fas fa-search me-2"></i>Analyze Beauty Products
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Beauty Analysis Info -->
+              <div class="card border-0 rounded-4 shadow-sm">
+                <div class="card-body p-4">
+                  <h5 class="fw-bold text-dark mb-4">What we analyze in Beauty Products:</h5>
+                  <div class="row">
+                    <div class="col-lg-6">
+                      <ul class="list-unstyled">
+                        <li class="d-flex align-items-start gap-2 mb-3">
+                          <i class="fas fa-check-circle text-success mt-1"></i>
+                          <span>Chemical irritants and harmful ingredients</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2 mb-3">
+                          <i class="fas fa-check-circle text-success mt-1"></i>
+                          <span>Common allergens in cosmetics</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2 mb-3">
+                          <i class="fas fa-check-circle text-success mt-1"></i>
+                          <span>Parabens, sulfates, and phthalates</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="col-lg-6">
+                      <ul class="list-unstyled">
+                        <li class="d-flex align-items-start gap-2 mb-3">
+                          <i class="fas fa-check-circle text-success mt-1"></i>
+                          <span>Artificial fragrances and colors</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2 mb-3">
+                          <i class="fas fa-check-circle text-success mt-1"></i>
+                          <span>Safety rating for your skin type</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/product-analyzer.js') }}"></script>
+  </body>
+</html>

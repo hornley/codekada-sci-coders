@@ -1,549 +1,651 @@
 """
-Unified Main Application - Ingredient Intelligence Analyzer
-Consolidated API for Flask backend integration
-
-This module combines all CLI functionalities into a unified interface
-suitable for backend server integration.
+Unified Flask Application
+Combines frontend routes + backend API with database integration
+Ingredient Intelligence Analyzer
 """
 
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_cors import CORS
 import os
-from typing import Optional, Dict, Any, List
+from werkzeug.utils import secure_filename
 from datetime import datetime
-from pathlib import Path
+import json
 
+# Database imports
+from src.db import db
+from src.init_db import init_database
+from src.user_profile_manager import (
+    UserProfileManager,
+    get_all_allergens,
+    get_all_preferences,
+    get_all_comorbidities
+)
+from src.db_models import User, Ingredient, Product, IntakeLog
+
+# Service import
 from src.main import IngredientIntelligenceAnalyzer
-from src.models import UserHealthPreferences, ProductAnalysisResponse
-from src.intake_tracker import IntakeTracker
-from src.vision_ocr_detector import VisionOCRDetector
-from src.user_profile import UserProfile
+from src.models import UserHealthPreferences
+
+# Initialize Flask app
+app = Flask(__name__)
+CORS(app)  # Enable CORS for frontend
+
+# Configure static and template folders
+app.static_folder = 'static'
+app.template_folder = 'templates'
+
+# Database Configuration
+# Use absolute path to ensure database is in project root, not instance folder
+DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ingredient_analyzer.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DATABASE_PATH}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Upload Configuration
+UPLOAD_FOLDER = 'temp_uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+
+# Initialize database
+db.init_app(app)
+
+# Create upload folder
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Initialize service
+analyzer_service = IngredientIntelligenceAnalyzer()
 
 
-class IngredientAnalysisService:
+def allowed_file(filename):
+    """Check if file extension is allowed."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# ==================== FRONTEND ROUTES ====================
+
+@app.route('/')
+def index():
+    """Main landing page"""
+    return render_template('landing.html')
+
+
+@app.route('/setup')
+def user_setup():
+    """User setup/registration page"""
+    return render_template('user-setup.html')
+
+
+@app.route('/dashboard')
+def dashboard():
+    """User dashboard"""
+    return render_template('dashboard.html')
+
+
+@app.route('/analyzer')
+def product_analyzer():
+    """Product analyzer page"""
+    return render_template('product-analyzer.html')
+
+
+@app.route('/scanner')
+def product_scanner():
+    """Product scanner page"""
+    category = request.args.get('category', 'food')
+    return render_template('product-scanner.html', category=category)
+
+
+# ==================== HEALTH CHECK ====================
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint."""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'Ingredient Intelligence Analyzer',
+        'version': '5.0.0',
+        'database': 'connected'
+    })
+
+
+# ==================== USER MANAGEMENT API ====================
+
+@app.route('/api/user/register', methods=['POST'])
+def register_user():
     """
-    Unified service for ingredient analysis and user management.
-    Designed for Flask/FastAPI backend integration.
+    Register new user with profile.
+    
+    Body: {
+        "username": "johndoe",
+        "email": "john@example.com",
+        "personal_info": {...},
+        "allergens": ["Peanuts", "Shellfish"],
+        "preferences": ["Vegan", "Low Sodium"],
+        "comorbidities": ["Diabetes Type 2"]
+    }
     """
+    data = request.get_json()
     
-    def __init__(self, ocr_method: str = 'vision'):
-        """
-        Initialize the analysis service.
+    try:
+        user = UserProfileManager.create_user_from_dict(data)
         
-        Args:
-            ocr_method: OCR method ('vision' or 'paddleocr')
-        """
-        self.analyzer = IngredientIntelligenceAnalyzer(ocr_method=ocr_method)
+        return jsonify({
+            'success': True,
+            'user_id': user.user_id,
+            'message': 'User registered successfully'
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/<user_id>', methods=['GET'])
+def get_user(user_id):
+    """Get user profile."""
+    try:
+        user = UserProfileManager.get_user(user_id=user_id)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        profile = UserProfileManager.get_user_profile_dict(user)
+        return jsonify(profile), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/<user_id>', methods=['PUT'])
+def update_user(user_id):
+    """Update user profile."""
+    data = request.get_json()
     
-    # ==================== ANALYSIS METHODS ====================
+    try:
+        user = UserProfileManager.get_user(user_id=user_id)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Update basic info
+        if 'full_name' in data:
+            user = UserProfileManager.update_user(user, full_name=data['full_name'])
+        if 'age' in data:
+            user = UserProfileManager.update_user(user, age=data['age'])
+        if 'email' in data:
+            user = UserProfileManager.update_user(user, email=data['email'])
+        
+        # Update allergens
+        if 'allergens' in data:
+            UserProfileManager.set_allergens(user, data['allergens'])
+        
+        # Update preferences
+        if 'preferences' in data:
+            UserProfileManager.set_preferences(user, data['preferences'])
+        
+        # Update comorbidities
+        if 'comorbidities' in data:
+            UserProfileManager.set_comorbidities(user, data['comorbidities'])
+        
+        profile = UserProfileManager.get_user_profile_dict(user)
+        return jsonify({'success': True, 'profile': profile}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/<user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    """Delete user profile."""
+    try:
+        user = UserProfileManager.get_user(user_id=user_id)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        UserProfileManager.delete_user(user)
+        
+        return jsonify({'success': True, 'message': 'User deleted'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== ALLERGENS / PREFERENCES / COMORBIDITIES ====================
+
+@app.route('/api/allergens', methods=['GET'])
+def list_allergens():
+    """Get all available allergens."""
+    try:
+        allergens = get_all_allergens()
+        return jsonify({'allergens': allergens}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/preferences', methods=['GET'])
+def list_preferences():
+    """Get all available preferences."""
+    try:
+        preferences = get_all_preferences()
+        return jsonify({'preferences': preferences}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/comorbidities', methods=['GET'])
+def list_comorbidities():
+    """Get all available comorbidities."""
+    try:
+        comorbidities = get_all_comorbidities()
+        return jsonify({'comorbidities': comorbidities}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== ANALYSIS ENDPOINTS ====================
+
+@app.route('/api/analyze', methods=['POST'])
+@app.route('/api/analyze/image', methods=['POST'])
+def analyze_image():
+    """
+    Analyze product from uploaded image.
     
-    def analyze_image(
-        self,
-        image_path: str,
-        user_profile: Optional[Dict] = None
-    ) -> Dict[str, Any]:
-        """
-        Analyze product from image with optional user profile.
-        
-        Args:
-            image_path: Path to product image
-            user_profile: Optional user profile dict with health preferences
-            
-        Returns:
-            Analysis result as dictionary
-        """
-        # Convert user profile dict to UserHealthPreferences if provided
-        preferences = None
-        if user_profile:
-            preferences = self._dict_to_preferences(user_profile)
-        
-        # Analyze
-        result = self.analyzer.analyze_product_image(
-            image_path,
-            user_preferences=preferences
-        )
-        
-        return result.model_dump()
+    Form data:
+        - image: file (required)
+        - user_id: string (optional)
+    """
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image file provided'}), 400
     
-    def analyze_text(
-        self,
-        ingredients_text: str,
-        product_type: Optional[str] = None,
-        user_profile: Optional[Dict] = None,
-        expiration_date: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Analyze product from ingredients text.
-        
-        Args:
-            ingredients_text: Ingredients text
-            product_type: Optional product type (food/drink/beauty)
-            user_profile: Optional user profile dict
-            expiration_date: Optional expiration date
-            
-        Returns:
-            Analysis result as dictionary
-        """
-        # Convert user profile
-        preferences = None
-        if user_profile:
-            preferences = self._dict_to_preferences(user_profile)
-        
-        # Analyze
-        result = self.analyzer.analyze_from_text(
-            ingredients_text=ingredients_text,
-            product_type=product_type,
-            expiration_date=expiration_date,
-            user_preferences=preferences
-        )
-        
-        return result.model_dump()
+    file = request.files['image']
     
-    def extract_ingredients_only(self, image_path: str) -> Dict[str, Any]:
-        """
-        Extract ingredients text from image without full analysis.
-        Useful for quick OCR extraction.
-        
-        Args:
-            image_path: Path to product image
-            
-        Returns:
-            OCR result with extracted text
-        """
-        detector = VisionOCRDetector()
-        result = detector.detect(image_path)
-        return result
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
     
-    # ==================== USER PROFILE METHODS ====================
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Invalid file type'}), 400
     
-    def create_user_profile(self, profile_data: Dict) -> Dict[str, Any]:
-        """
-        Create a new user profile from registration data.
+    try:
+        # Save uploaded file
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        temp_filename = f"{timestamp}_{filename}"
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
+        file.save(temp_path)
         
-        Args:
-            profile_data: Dictionary containing all user profile fields
-            
-        Returns:
-            Created user profile with ID
-        """
-        # Create UserProfile instance
-        user_profile = UserProfile(**profile_data)
-        
-        # Save to database
-        user_id = user_profile.save_to_database()
-        
-        return {
-            "success": True,
-            "user_id": user_id,
-            "message": "User profile created successfully"
-        }
-    
-    def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get user profile by ID.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            User profile dictionary or None
-        """
-        user_profile = UserProfile.load_from_database(user_id)
-        if user_profile:
-            return user_profile.to_dict()
-        return None
-    
-    def update_user_profile(self, user_id: str, updates: Dict) -> Dict[str, Any]:
-        """
-        Update user profile.
-        
-        Args:
-            user_id: User identifier
-            updates: Dictionary of fields to update
-            
-        Returns:
-            Success response
-        """
-        user_profile = UserProfile.load_from_database(user_id)
-        if not user_profile:
-            return {"success": False, "error": "User not found"}
-        
-        # Update fields
-        for key, value in updates.items():
-            if hasattr(user_profile, key):
-                setattr(user_profile, key, value)
-        
-        # Save
-        user_profile.save_to_database()
-        
-        return {
-            "success": True,
-            "message": "Profile updated successfully"
-        }
-    
-    def get_user_preferences(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get user health preferences for analysis.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            Health preferences dictionary
-        """
-        tracker = IntakeTracker(db_path=f"intake_{user_id}.db")
-        preferences = tracker.load_user_preferences()
-        
-        if preferences:
-            return {
-                "allergies": preferences.allergies,
-                "dietary_restrictions": preferences.dietary_restrictions,
-                "avoid_ingredients": preferences.avoid_ingredients,
-                "health_goals": preferences.health_goals
-            }
-        return None
-    
-    def save_user_preferences(
-        self,
-        user_id: str,
-        preferences: Dict[str, List[str]]
-    ) -> Dict[str, Any]:
-        """
-        Save user health preferences.
-        
-        Args:
-            user_id: User identifier
-            preferences: Dictionary with health preferences
-            
-        Returns:
-            Success response
-        """
-        tracker = IntakeTracker(db_path=f"intake_{user_id}.db")
-        
-        prefs = UserHealthPreferences(
-            allergies=preferences.get('allergies', []),
-            dietary_restrictions=preferences.get('dietary_restrictions', []),
-            avoid_ingredients=preferences.get('avoid_ingredients', []),
-            health_goals=preferences.get('health_goals', [])
-        )
-        
-        tracker.save_user_preferences(prefs)
-        
-        return {
-            "success": True,
-            "message": "Preferences saved successfully"
-        }
-    
-    # ==================== INTAKE TRACKING METHODS ====================
-    
-    def log_intake(
-        self,
-        user_id: str,
-        analysis_result: Dict,
-        timestamp: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Log consumed product to user's intake history.
-        
-        Args:
-            user_id: User identifier
-            analysis_result: Product analysis result
-            timestamp: Optional consumption timestamp (ISO format)
-            
-        Returns:
-            Success response with entry ID
-        """
-        tracker = IntakeTracker(db_path=f"intake_{user_id}.db")
-        
-        # Convert dict to ProductAnalysisResponse
-        analysis = ProductAnalysisResponse(**analysis_result)
-        
-        # Parse timestamp if provided
-        ts = None
-        if timestamp:
-            ts = datetime.fromisoformat(timestamp)
-        
-        # Log intake
-        entry_id = tracker.log_intake(analysis, timestamp=ts)
-        
-        return {
-            "success": True,
-            "entry_id": entry_id,
-            "message": "Product logged to intake history"
-        }
-    
-    def get_daily_summary(
-        self,
-        user_id: str,
-        date: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Get daily intake summary for user.
-        
-        Args:
-            user_id: User identifier
-            date: Optional date (YYYY-MM-DD), defaults to today
-            
-        Returns:
-            Daily summary with metrics
-        """
-        tracker = IntakeTracker(db_path=f"intake_{user_id}.db")
-        
-        # Parse date if provided
-        target_date = None
-        if date:
-            target_date = datetime.strptime(date, '%Y-%m-%d')
-        
-        return tracker.get_daily_summary(date=target_date)
-    
-    def get_weekly_report(
-        self,
-        user_id: str,
-        end_date: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Get weekly intake report for user.
-        
-        Args:
-            user_id: User identifier
-            end_date: Optional end date (YYYY-MM-DD), defaults to today
-            
-        Returns:
-            Weekly report with insights
-        """
-        tracker = IntakeTracker(db_path=f"intake_{user_id}.db")
-        
-        # Parse end date if provided
-        target_date = None
-        if end_date:
-            target_date = datetime.strptime(end_date, '%Y-%m-%d')
-        
-        return tracker.get_weekly_report(end_date=target_date)
-    
-    def get_intake_history(
-        self,
-        user_id: str,
-        limit: int = 20
-    ) -> Dict[str, Any]:
-        """
-        Get intake history for user.
-        
-        Args:
-            user_id: User identifier
-            limit: Number of entries to return
-            
-        Returns:
-            List of consumed products
-        """
-        tracker = IntakeTracker(db_path=f"intake_{user_id}.db")
-        history = tracker.get_all_history(limit=limit)
-        
-        return {
-            "history": history,
-            "count": len(history)
-        }
-    
-    def check_product_history(
-        self,
-        user_id: str,
-        product_name: str
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Check if user has consumed a product before.
-        
-        Args:
-            user_id: User identifier
-            product_name: Product name to check
-            
-        Returns:
-            Previous consumption data or None
-        """
-        tracker = IntakeTracker(db_path=f"intake_{user_id}.db")
-        return tracker.check_product_against_history(product_name)
-    
-    def delete_intake_entry(
-        self,
-        user_id: str,
-        entry_id: int
-    ) -> Dict[str, Any]:
-        """
-        Delete an intake entry.
-        
-        Args:
-            user_id: User identifier
-            entry_id: Entry ID to delete
-            
-        Returns:
-            Success response
-        """
-        tracker = IntakeTracker(db_path=f"intake_{user_id}.db")
-        deleted = tracker.delete_entry(entry_id)
-        
-        if deleted:
-            return {"success": True, "message": "Entry deleted"}
-        else:
-            return {"success": False, "error": "Entry not found"}
-    
-    # ==================== BATCH OPERATIONS ====================
-    
-    def analyze_batch(
-        self,
-        items: List[Dict[str, Any]],
-        user_profile: Optional[Dict] = None
-    ) -> List[Dict[str, Any]]:
-        """
-        Analyze multiple products in batch.
-        
-        Args:
-            items: List of items to analyze (each with 'type' and 'data')
-            user_profile: Optional user profile
-            
-        Returns:
-            List of analysis results
-        """
-        results = []
-        
-        for item in items:
-            if item['type'] == 'image':
-                result = self.analyze_image(item['data'], user_profile)
-            elif item['type'] == 'text':
-                result = self.analyze_text(
-                    item['data'],
-                    item.get('product_type'),
-                    user_profile
+        # Get user profile if provided
+        user_preferences = None
+        if 'user_id' in request.form:
+            user_id = request.form['user_id']
+            user = UserProfileManager.get_user(user_id=user_id)
+            if user:
+                user_dict = UserProfileManager.get_user_profile_dict(user)
+                # Convert to UserHealthPreferences format
+                user_preferences = UserHealthPreferences(
+                    allergies=[a['name'] for a in user_dict.get('allergens', [])],
+                    dietary_restrictions=[p['name'] for p in user_dict.get('preferences', []) if p.get('type') in ['diet', 'religious']],
+                    avoid_ingredients=[],
+                    health_goals=[c['name'] for c in user_dict.get('comorbidities', [])]
                 )
-            else:
-                result = {"success": False, "error": "Invalid item type"}
-            
-            results.append(result)
         
-        return results
+        # Analyze
+        result = analyzer_service.analyze_product_image(temp_path, user_preferences)
+        
+        # Convert to dict
+        result_dict = result.model_dump()
+        
+        # Store ingredients in database (if analysis successful)
+        if result_dict.get('success') and result_dict.get('ingredients_text'):
+            # Parse ingredients
+            ingredients_text = result_dict['ingredients_text']
+            ingredient_names = [ing.strip() for ing in ingredients_text.replace(';', ',').split(',')]
+            for ing_name in ingredient_names:
+                if ing_name:
+                    Ingredient.get_or_create(ing_name)
+        
+        # Cleanup temp file
+        os.remove(temp_path)
+        
+        return jsonify(result_dict), 200
     
-    # ==================== HELPER METHODS ====================
+    except Exception as e:
+        # Cleanup on error
+        if 'temp_path' in locals() and os.path.exists(temp_path):
+            os.remove(temp_path)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/analyze/text', methods=['POST'])
+def analyze_text():
+    """
+    Analyze product from ingredients text.
     
-    def _dict_to_preferences(self, profile: Dict) -> UserHealthPreferences:
-        """Convert dictionary to UserHealthPreferences object."""
-        return UserHealthPreferences(
-            allergies=profile.get('allergies', profile.get('allergens', [])),
-            dietary_restrictions=profile.get('dietary_restrictions', profile.get('diet_preferences', [])),
-            avoid_ingredients=profile.get('avoid_ingredients', []),
-            health_goals=profile.get('health_goals', profile.get('health_preferences', []))
+    JSON body:
+        - ingredients_text: string (required)
+        - product_type: string (optional)
+        - user_id: string (optional)
+    """
+    data = request.get_json()
+    
+    if not data or 'ingredients_text' not in data:
+        return jsonify({'error': 'ingredients_text is required'}), 400
+    
+    try:
+        # Get user profile if provided
+        user_preferences = None
+        if 'user_id' in data:
+            user = UserProfileManager.get_user(user_id=data['user_id'])
+            if user:
+                user_dict = UserProfileManager.get_user_profile_dict(user)
+                # Convert to UserHealthPreferences format
+                user_preferences = UserHealthPreferences(
+                    allergies=[a['name'] for a in user_dict.get('allergens', [])],
+                    dietary_restrictions=[p['name'] for p in user_dict.get('preferences', []) if p.get('type') in ['diet', 'religious']],
+                    avoid_ingredients=[],
+                    health_goals=[c['name'] for c in user_dict.get('comorbidities', [])]
+                )
+        
+        result = analyzer_service.analyze_from_text(
+            ingredients_text=data['ingredients_text'],
+            product_type=data.get('product_type'),
+            expiration_date=data.get('expiration_date'),
+            user_preferences=user_preferences
         )
-    
-    def health_check(self) -> Dict[str, Any]:
-        """
-        Health check endpoint.
         
-        Returns:
-            Service status
-        """
-        return {
-            "status": "healthy",
-            "service": "Ingredient Intelligence Analyzer",
-            "version": "3.0.0",
-            "features": [
-                "image_analysis",
-                "text_analysis",
-                "user_profiles",
-                "intake_tracking",
-                "personalized_recommendations"
+        # Convert to dict
+        result_dict = result.model_dump()
+        
+        # Store ingredients in database
+        if result_dict.get('success') and result_dict.get('ingredients_text'):
+            ingredient_names = [ing.strip() for ing in result_dict['ingredients_text'].replace(';', ',').split(',')]
+            for ing_name in ingredient_names:
+                if ing_name:
+                    Ingredient.get_or_create(ing_name)
+        
+        return jsonify(result_dict), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/upload-image', methods=['POST'])
+def upload_image():
+    """Legacy endpoint - redirects to /api/analyze/image"""
+    return analyze_image()
+
+
+@app.route('/api/search', methods=['GET'])
+def search_products():
+    """API endpoint for product search"""
+    query = request.args.get('q', '')
+    
+    try:
+        # Search in ingredients database
+        ingredients = Ingredient.query.filter(
+            Ingredient.name.ilike(f'%{query}%')
+        ).limit(10).all()
+        
+        return jsonify({
+            'status': 'success',
+            'query': query,
+            'results': [
+                {
+                    'id': ing.id,
+                    'name': ing.name,
+                    'times_seen': ing.times_seen,
+                    'category': 'ingredient'
+                }
+                for ing in ingredients
             ]
-        }
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 
-# ==================== CONVENIENCE FUNCTIONS ====================
+# ==================== INGREDIENTS DATABASE ====================
 
-def analyze_product_quick(
-    image_path: str,
-    user_allergies: Optional[List[str]] = None,
-    user_restrictions: Optional[List[str]] = None
-) -> Dict[str, Any]:
+@app.route('/api/ingredients', methods=['GET'])
+def list_ingredients():
     """
-    Quick analysis function for simple use cases.
+    Get all ingredients in database.
     
-    Args:
-        image_path: Path to product image
-        user_allergies: Optional list of allergies
-        user_restrictions: Optional list of dietary restrictions
+    Query params:
+        - limit: max results (default 100)
+        - search: search term
+    """
+    try:
+        limit = request.args.get('limit', 100, type=int)
+        search = request.args.get('search', '')
         
-    Returns:
-        Analysis result
-    """
-    service = IngredientAnalysisService()
-    
-    user_profile = None
-    if user_allergies or user_restrictions:
-        user_profile = {
-            'allergies': user_allergies or [],
-            'dietary_restrictions': user_restrictions or []
-        }
-    
-    return service.analyze_image(image_path, user_profile)
-
-
-def get_user_analysis(
-    user_id: str,
-    image_path: str
-) -> Dict[str, Any]:
-    """
-    Analyze product with user's saved preferences.
-    
-    Args:
-        user_id: User identifier
-        image_path: Path to product image
+        if search:
+            ingredients = Ingredient.query.filter(
+                Ingredient.name.ilike(f'%{search}%')
+            ).limit(limit).all()
+        else:
+            ingredients = Ingredient.query.order_by(
+                Ingredient.times_seen.desc()
+            ).limit(limit).all()
         
-    Returns:
-        Personalized analysis result
+        return jsonify({
+            'ingredients': [i.to_dict() for i in ingredients],
+            'total': len(ingredients)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ingredients/<int:ingredient_id>', methods=['GET'])
+def get_ingredient(ingredient_id):
+    """Get ingredient details."""
+    try:
+        ingredient = Ingredient.query.get(ingredient_id)
+        
+        if not ingredient:
+            return jsonify({'error': 'Ingredient not found'}), 404
+        
+        return jsonify(ingredient.to_dict()), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ingredients/stats', methods=['GET'])
+def ingredient_stats():
+    """Get ingredient database statistics."""
+    try:
+        total_ingredients = Ingredient.query.count()
+        natural_count = Ingredient.query.filter_by(is_natural=True).count()
+        artificial_count = Ingredient.query.filter_by(is_artificial=True).count()
+        allergen_count = Ingredient.query.filter_by(is_allergen=True).count()
+        
+        # Most common ingredients
+        top_ingredients = Ingredient.query.order_by(
+            Ingredient.times_seen.desc()
+        ).limit(10).all()
+        
+        return jsonify({
+            'total_ingredients': total_ingredients,
+            'natural_ingredients': natural_count,
+            'artificial_ingredients': artificial_count,
+            'allergen_ingredients': allergen_count,
+            'top_ingredients': [
+                {'name': i.name, 'times_seen': i.times_seen} 
+                for i in top_ingredients
+            ]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== INTAKE TRACKING ====================
+
+@app.route('/api/intake/log', methods=['POST'])
+def log_intake():
     """
-    service = IngredientAnalysisService()
+    Log consumed product.
     
-    # Load user preferences
-    user_profile = service.get_user_preferences(user_id)
+    JSON body:
+        - user_id: string (required)
+        - analysis_result: object (required)
+        - quantity: number (optional)
+        - unit: string (optional)
+    """
+    data = request.get_json()
     
-    # Analyze
-    return service.analyze_image(image_path, user_profile)
+    if not data or 'user_id' not in data or 'analysis_result' not in data:
+        return jsonify({'error': 'user_id and analysis_result are required'}), 400
+    
+    try:
+        user = UserProfileManager.get_user(user_id=data['user_id'])
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        analysis = data['analysis_result']
+        
+        # Create intake log
+        log = IntakeLog(
+            user_id=user.id,
+            product_name=analysis.get('product_name'),
+            product_type=analysis.get('product_type'),
+            quantity=data.get('quantity'),
+            unit=data.get('unit'),
+            analysis_json=json.dumps(analysis),
+            safety_score=analysis.get('safety_score_for_user') or analysis.get('healthiness_rating'),
+            warnings_count=len(analysis.get('warnings_for_user', []))
+        )
+        
+        db.session.add(log)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'entry_id': log.id,
+            'message': 'Intake logged successfully'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
-# ==================== MAIN (for testing) ====================
+@app.route('/api/intake/history/<user_id>', methods=['GET'])
+def get_intake_history(user_id):
+    """Get intake history for user."""
+    try:
+        user = UserProfileManager.get_user(user_id=user_id)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        limit = request.args.get('limit', 50, type=int)
+        
+        logs = IntakeLog.query.filter_by(user_id=user.id).order_by(
+            IntakeLog.timestamp.desc()
+        ).limit(limit).all()
+        
+        return jsonify({
+            'history': [log.to_dict() for log in logs],
+            'total': len(logs)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-if __name__ == "__main__":
-    import sys
-    
-    # Demo usage
-    service = IngredientAnalysisService()
+
+@app.route('/api/intake/<user_id>/<int:entry_id>', methods=['DELETE'])
+def delete_intake_entry(user_id, entry_id):
+    """Delete intake entry."""
+    try:
+        user = UserProfileManager.get_user(user_id=user_id)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        log = IntakeLog.query.filter_by(id=entry_id, user_id=user.id).first()
+        
+        if not log:
+            return jsonify({'error': 'Entry not found'}), 404
+        
+        db.session.delete(log)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Entry deleted'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== ERROR HANDLERS ====================
+
+@app.errorhandler(404)
+def not_found(error):
+    # Check if request is for API
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Not found'}), 404
+    # Otherwise render 404 page
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(413)
+def too_large(error):
+    return jsonify({'error': 'File too large (max 16MB)'}), 413
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal server error'}), 500
+
+
+# ==================== MAIN ====================
+
+if __name__ == '__main__':
+    # Initialize database (creates tables and seeds data if needed)
+    with app.app_context():
+        print("\n🗄️  Checking database...")
+        print(f"📁 Database path: {DATABASE_PATH}")
+        
+        db_exists = os.path.exists(DATABASE_PATH)
+        
+        if not db_exists:
+            print("📦 Database not found. Creating new database...")
+            init_database(app)
+            print("✅ Database created and initialized successfully!")
+        else:
+            print("✓ Database file exists")
+            
+            # Ensure all tables exist (in case schema changed)
+            try:
+                db.create_all()
+                print("✓ Database tables verified")
+            except Exception as e:
+                print(f"⚠️  Error verifying tables: {e}")
     
     print("\n" + "="*70)
-    print("🧪 INGREDIENT ANALYSIS SERVICE - DEMO")
+    print("🚀 Ingredient Intelligence Unified Server")
     print("="*70)
+    print("\n📋 Frontend Routes:")
+    print("   GET  / - Landing page")
+    print("   GET  /setup - User setup page")
+    print("   GET  /dashboard - User dashboard")
+    print("   GET  /analyzer - Product analyzer page")
+    print("   GET  /scanner - Product scanner page")
+    print("\n📋 API Endpoints:")
+    print("   GET  /health - Health check")
+    print("   POST /api/user/register - Register user")
+    print("   GET  /api/user/<id> - Get user profile")
+    print("   GET  /api/allergens - List allergens")
+    print("   GET  /api/preferences - List preferences")
+    print("   GET  /api/comorbidities - List comorbidities")
+    print("   POST /api/analyze/image - Analyze from image")
+    print("   POST /api/analyze/text - Analyze from text")
+    print("   GET  /api/ingredients - List ingredients")
+    print("   POST /api/intake/log - Log consumed product")
+    print("   GET  /api/intake/history/<id> - Get intake history")
+    print("\n🌐 Server starting on http://localhost:5000")
+    print("="*70 + "\n")
     
-    # Health check
-    health = service.health_check()
-    print(f"\n✓ Service: {health['service']}")
-    print(f"✓ Version: {health['version']}")
-    print(f"✓ Status: {health['status']}")
-    
-    if len(sys.argv) > 1:
-        image_path = sys.argv[1]
-        
-        print(f"\n📸 Analyzing: {image_path}")
-        
-        # Example with user preferences
-        user_profile = {
-            'allergies': ['peanuts', 'milk'],
-            'dietary_restrictions': ['vegan'],
-            'health_goals': ['weight loss']
-        }
-        
-        result = service.analyze_image(image_path, user_profile)
-        
-        print(f"\n✓ Product: {result.get('product_name', 'Unknown')}")
-        print(f"✓ Health Rating: {result['healthiness_rating']}/10")
-        if result.get('safety_score_for_user'):
-            print(f"✓ Your Safety Score: {result['safety_score_for_user']}/10")
-        
-        print("\n" + "="*70)
-    else:
-        print("\nUsage: python app.py <image_path>")
-        print("\nThis service provides:")
-        print("  • Product analysis from images and text")
-        print("  • User profile management")
-        print("  • Personalized health recommendations")
-        print("  • Intake tracking and reports")
+    app.run(debug=True, host='0.0.0.0', port=5000)
