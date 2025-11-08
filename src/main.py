@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from src.vision_ocr_detector import VisionOCRDetector
 from src.classifier import ProductClassifier
 from src.ingredient_analyzer import IngredientAnalyzer
-from src.models import ProductAnalysisResponse
+from src.models import ProductAnalysisResponse, UserHealthPreferences
 
 # Load environment variables
 load_dotenv()
@@ -65,12 +65,17 @@ class IngredientIntelligenceAnalyzer:
         self.classifier = ProductClassifier()
         self.analyzer = IngredientAnalyzer(api_key=openai_api_key)
     
-    def analyze_product_image(self, image_path: str) -> ProductAnalysisResponse:
+    def analyze_product_image(
+        self, 
+        image_path: str, 
+        user_preferences: Optional[UserHealthPreferences] = None
+    ) -> ProductAnalysisResponse:
         """
         Complete analysis pipeline: OCR → Classification → AI Analysis.
         
         Args:
             image_path: Path to product image
+            user_preferences: Optional user health preferences for personalized analysis
             
         Returns:
             Complete analysis response
@@ -123,7 +128,8 @@ class IngredientIntelligenceAnalyzer:
                 product_type=classification['product_type'],
                 ingredients_text=ocr_result['ingredients_text'],
                 expiration_date=ocr_result.get('expiration_date'),
-                manufacture_date=ocr_result.get('manufacture_date')
+                manufacture_date=ocr_result.get('manufacture_date'),
+                user_preferences=user_preferences
             )
             
             if not analysis['success']:
@@ -146,7 +152,7 @@ class IngredientIntelligenceAnalyzer:
             processing_time = time.time() - start_time
             print(f"\n✅ Analysis complete in {processing_time:.2f} seconds\n")
             
-            return ProductAnalysisResponse(
+            response = ProductAnalysisResponse(
                 success=True,
                 product_type=classification['product_type'],
                 product_name=ocr_result.get('product_name'),
@@ -168,6 +174,15 @@ class IngredientIntelligenceAnalyzer:
                 health_suggestion=analysis.get('health_suggestion', ''),
                 processing_time=processing_time
             )
+            
+            # Add personalization if user preferences provided
+            if user_preferences:
+                response.personalized_recommendation = analysis.get('personalized_recommendation')
+                response.safety_score_for_user = analysis.get('safety_score_for_user')
+                response.warnings_for_user = analysis.get('warnings_for_user', [])
+                response.matches_preferences = analysis.get('matches_preferences')
+            
+            return response
         
         except Exception as e:
             return ProductAnalysisResponse(
@@ -181,7 +196,8 @@ class IngredientIntelligenceAnalyzer:
         self,
         ingredients_text: str,
         product_type: Optional[str] = None,
-        expiration_date: Optional[str] = None
+        expiration_date: Optional[str] = None,
+        user_preferences: Optional[UserHealthPreferences] = None
     ) -> ProductAnalysisResponse:
         """
         Analyze ingredients from text directly (skip OCR).
@@ -190,6 +206,7 @@ class IngredientIntelligenceAnalyzer:
             ingredients_text: Ingredients list as text
             product_type: Optional product type (will classify if not provided)
             expiration_date: Optional expiration date
+            user_preferences: Optional user health preferences for personalized analysis
             
         Returns:
             Analysis response
@@ -215,7 +232,8 @@ class IngredientIntelligenceAnalyzer:
             analysis = self.analyzer.analyze(
                 product_type=product_type,
                 ingredients_text=ingredients_text,
-                expiration_date=expiration_date
+                expiration_date=expiration_date,
+                user_preferences=user_preferences
             )
             
             if not analysis['success']:
@@ -231,7 +249,7 @@ class IngredientIntelligenceAnalyzer:
             processing_time = time.time() - start_time
             print(f"✅ Analysis complete in {processing_time:.2f} seconds\n")
             
-            return ProductAnalysisResponse(
+            response = ProductAnalysisResponse(
                 success=True,
                 product_type=product_type,
                 classification_confidence=confidence,
@@ -251,6 +269,15 @@ class IngredientIntelligenceAnalyzer:
                 health_suggestion=analysis.get('health_suggestion', ''),
                 processing_time=processing_time
             )
+            
+            # Add personalization if user preferences provided
+            if user_preferences:
+                response.personalized_recommendation = analysis.get('personalized_recommendation')
+                response.safety_score_for_user = analysis.get('safety_score_for_user')
+                response.warnings_for_user = analysis.get('warnings_for_user', [])
+                response.matches_preferences = analysis.get('matches_preferences')
+            
+            return response
         
         except Exception as e:
             return ProductAnalysisResponse(
