@@ -1,41 +1,9 @@
 from flask import Flask, jsonify, request
 from db import db, init_app
 from models import User, Allergen, Preferences, user_allergens, user_preferences
+from init_db import seed_data
 
 app = init_app()
-
-# Initialize DB with sample data
-def init_db():
-    with app.app_context():
-        db.create_all()
-        
-        # Add sample allergens
-        if not Allergen.query.first():
-            allergen1 = Allergen(name="Peanuts")
-            allergen2 = Allergen(name="Gluten")
-            db.session.add_all([allergen1, allergen2])
-        
-        # Add sample preferences
-        if not Preferences.query.first():
-            pref1 = Preferences(name="Vegan", type="diet")
-            pref2 = Preferences(name="Low Sugar", type="health")
-            db.session.add_all([pref1, pref2])
-        
-        # Add sample user
-        if not User.query.first():
-            user = User(
-                username="alice",
-                password_hash="hash",
-                password_salt="salt",
-                first_name="Alice",
-                last_name="Smith"
-            )
-            user.allergens.append(allergen1)
-            user.preferences.append(pref1)
-            db.session.add(user)
-        
-        db.session.commit()
-
 # Routes
 @app.route('/users', methods=['GET'])
 def get_users():
@@ -61,5 +29,8 @@ def get_preferences():
     return jsonify([{'id': p.id, 'name': p.name, 'type': p.type} for p in prefs])
 
 if __name__ == '__main__':
-    init_db()
+    with app.app_context():  # push app context
+        db.create_all()      # ensure all tables exist
+        seed_data()          # now seed the tables
     app.run(debug=True)
+
