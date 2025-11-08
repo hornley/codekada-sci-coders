@@ -123,26 +123,6 @@ def pretty_print_results(result: Dict[str, Any]) -> None:
     if result.get('health_suggestion'):
         print(f"Health Tip: {result['health_suggestion']}")
     
-    # Personalized Analysis (Phase 2)
-    if result.get('personalized_recommendation'):
-        print("\n🏥 PERSONALIZED ANALYSIS")
-        print("-" * 80)
-        print(f"For Your Profile: {result['personalized_recommendation']}")
-        
-        if result.get('safety_score_for_user') is not None:
-            user_rating = result['safety_score_for_user']
-            user_stars = "⭐" * user_rating + "☆" * (10 - user_rating)
-            print(f"Your Safety Score: {user_rating}/10 {user_stars}")
-        
-        if result.get('warnings_for_user'):
-            print(f"\n⚠️  Warnings for You:")
-            for warning in result['warnings_for_user']:
-                print(f"   • {warning}")
-        
-        if result.get('matches_preferences') is not None:
-            match_status = "✅ YES" if result['matches_preferences'] else "❌ NO"
-            print(f"\nMatches Your Preferences: {match_status}")
-    
     # Processing info
     if result.get('processing_time'):
         print(f"\n⏱️  Processing Time: {result['processing_time']:.2f} seconds")

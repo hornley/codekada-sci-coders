@@ -39,21 +39,6 @@ An intelligent system that detects and analyzes ingredients from consumer produc
 - Health rating (1-10 scale)
 - Personalized health recommendations
 
-### 4️⃣ **Personalized Health Analysis** (Phase 2) ⭐ NEW
-- Define your health profile (allergies, dietary restrictions, health goals)
-- Get personalized product safety scores
-- Receive warnings specific to your health needs
-- Check if products match your dietary preferences
-- Tailored recommendations based on your health goals
-
-### 5️⃣ **Intake Tracking & Reports** (Phase 3) ⭐ NEW
-- Track consumed products over time with SQLite database
-- Log products with automatic health metrics calculation
-- View daily summaries and weekly health reports
-- Check consumption history for specific products
-- Monitor allergen exposures and preference violations
-- Save and load user health preferences
-
 ---
 
 ## 📋 Output Example
@@ -145,34 +130,6 @@ print(f"Harmful: {result.harmful_ingredients}")
 print(f"Allergens: {result.allergens}")
 ```
 
-### Personalized Health Analysis ⭐ NEW
-
-```python
-from src import IngredientIntelligenceAnalyzer
-from src.models import UserHealthPreferences
-
-# Define your health profile
-user_preferences = UserHealthPreferences(
-    allergies=["peanuts", "shellfish", "soy"],
-    dietary_restrictions=["vegan", "gluten-free"],
-    avoid_ingredients=["artificial colors", "high fructose corn syrup"],
-    health_goals=["weight loss", "reduce sugar intake"]
-)
-
-# Analyze with personalization
-analyzer = IngredientIntelligenceAnalyzer()
-result = analyzer.analyze_product_image(
-    "product.jpg",
-    user_preferences=user_preferences
-)
-
-# Get personalized results
-print(f"Safety for you: {result.safety_score_for_user}/10")
-print(f"Matches preferences: {result.matches_preferences}")
-print(f"Personalized advice: {result.personalized_recommendation}")
-print(f"Your warnings: {result.warnings_for_user}")
-```
-
 ### OCR Method Comparison
 
 | Feature | Vision API (Default) | PaddleOCR |
@@ -189,22 +146,8 @@ print(f"Your warnings: {result.warnings_for_user}")
 ### Command Line
 
 ```bash
-# Standard analysis (uses Vision API by default)
+# From image (uses Vision API by default)
 python example.py path/to/product.jpg
-
-# Personalized analysis with health preferences (Phase 2)
-python example_with_preferences.py path/to/product.jpg
-
-# Set your health preferences (Phase 3)
-python set_preferences.py
-
-# Track product intake and log to database (Phase 3)
-python track_intake.py path/to/product.jpg
-
-# View intake reports (Phase 3)
-python view_intake.py today      # Today's summary
-python view_intake.py week       # Weekly report
-python view_intake.py history    # Full history
 
 # Results are automatically saved to results/ folder as JSON
 
@@ -213,26 +156,6 @@ python example.py --text "Water, Sugar, Salt" --type food
 
 # Run demo examples
 python example.py
-```
-
-### Intake Tracking Workflow (Phase 3) ⭐ NEW
-
-```bash
-# 1. Set your health preferences (one-time setup)
-python set_preferences.py
-
-# 2. Track products you consume
-python track_intake.py images/breakfast.jpg
-python track_intake.py images/lunch.jpg
-python track_intake.py images/snack.jpg
-
-# 3. View your health reports
-python view_intake.py today     # See what you ate today
-python view_intake.py week      # Get weekly health insights
-python view_intake.py history   # Review consumption history
-
-# 4. Check consumption history for a product
-# (automatically shown when tracking a previously consumed product)
 ```
 
 ### JSON Output
@@ -274,21 +197,15 @@ codekada/
 │   ├── classifier.py               # Product type classification
 │   ├── ingredient_analyzer.py      # OpenAI-powered analysis
 │   ├── models.py                   # Pydantic data models
-│   ├── utils.py                    # Utility functions
-│   └── intake_tracker.py           # ⭐ NEW: SQLite intake tracking (Phase 3)
+│   └── utils.py                    # Utility functions
 ├── legacy_paddleocr/               # Optional PaddleOCR files
 │   └── ocr_detector.py             # PaddleOCR implementation
 ├── results/                        # JSON output files (auto-created)
-├── example.py                      # Basic usage examples
-├── example_with_preferences.py     # ⭐ NEW: Personalized analysis (Phase 2)
-├── track_intake.py                 # ⭐ NEW: Track product consumption (Phase 3)
-├── view_intake.py                  # ⭐ NEW: View intake reports (Phase 3)
-├── set_preferences.py              # ⭐ NEW: Set health preferences (Phase 3)
+├── example.py                      # Usage examples
 ├── analyze_with_json.py            # JSON output demo
 ├── test_vision.py                  # Test Vision API
 ├── requirements.txt                # Core dependencies
 ├── .env.example                    # Environment template
-├── intake_history.db               # ⭐ NEW: SQLite database (auto-created)
 └── README.md                       # This file
 ```
 
@@ -338,47 +255,6 @@ result = analyzer.analyze_from_text(
     product_type="beauty"
 )
 print(f"Irritants: {result.irritants}")
-```
-
-### Personalized Analysis (Phase 2)
-```python
-from src.models import UserHealthPreferences
-
-preferences = UserHealthPreferences(
-    allergies=["peanuts", "milk"],
-    dietary_restrictions=["vegan"],
-    health_goals=["weight loss"]
-)
-
-result = analyzer.analyze_product_image("product.jpg", user_preferences=preferences)
-print(f"Safety for you: {result.safety_score_for_user}/10")
-print(f"Warnings: {result.warnings_for_user}")
-```
-
-### Track Intake (Phase 3) ⭐ NEW
-```python
-from src.intake_tracker import IntakeTracker
-
-tracker = IntakeTracker()
-
-# Log a consumed product
-result = analyzer.analyze_product_image("breakfast.jpg")
-entry_id = tracker.log_intake(result)
-
-# Get daily summary
-summary = tracker.get_daily_summary()
-print(f"Today: {summary['metrics']['total_products']} products")
-print(f"Avg health rating: {summary['metrics']['avg_health_rating']}/10")
-
-# Get weekly report
-report = tracker.get_weekly_report()
-print(f"Week: {report['total_products']} products")
-print(f"Avg rating: {report['avg_health_rating']}/10")
-
-# Check if product consumed before
-history = tracker.check_product_against_history("Coca Cola")
-if history:
-    print(f"Last consumed: {history['last_consumed']}")
 ```
 
 ### Batch Processing

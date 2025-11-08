@@ -42,6 +42,7 @@ ENV/
 # Test and sample files
 test_images/
 examples/
+images/
 *.jpg
 *.png
 *.jpeg
@@ -55,11 +56,6 @@ preprocessed_images/
 legacy_paddleocr/
 *.json
 !package.json
-
-# Phase 3: Database files
-*.db
-*.sqlite
-*.sqlite3
 
 # Logs
 *.log
@@ -79,4 +75,3 @@ inference/
 *.tmp
 *.temp
 .cache/
-/cli_tools

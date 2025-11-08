@@ -7,24 +7,6 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 
-class UserHealthPreferences(BaseModel):
-    """User's health preferences and restrictions."""
-    allergies: List[str] = Field(default_factory=list, description="Personal allergies (e.g., peanuts, milk)")
-    dietary_restrictions: List[str] = Field(default_factory=list, description="Dietary restrictions (e.g., vegan, gluten-free)")
-    avoid_ingredients: List[str] = Field(default_factory=list, description="Ingredients to avoid (e.g., high-sugar, artificial-colors)")
-    health_goals: List[str] = Field(default_factory=list, description="Health goals (e.g., weight-loss, muscle-gain)")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "allergies": ["peanuts", "milk"],
-                "dietary_restrictions": ["vegan", "gluten-free"],
-                "avoid_ingredients": ["high-sugar", "artificial-colors"],
-                "health_goals": ["weight-loss", "heart-health"]
-            }
-        }
-
-
 class OCRResult(BaseModel):
     """Result from OCR detection."""
     success: bool
@@ -86,15 +68,8 @@ class ProductAnalysisResponse(BaseModel):
     fda_approval: str = "Unverified"
     healthiness_rating: int = Field(ge=1, le=10, default=5)
     expiration_valid: bool = True
-    days_until_expiration: Optional[int] = None
     recommendation: str = ""
     health_suggestion: str = ""
-    
-    # Phase 2: Personalization
-    personalized_recommendation: Optional[str] = None
-    safety_score_for_user: Optional[int] = Field(None, ge=1, le=10)
-    warnings_for_user: List[str] = Field(default_factory=list)
-    matches_preferences: Optional[bool] = None
     
     # Metadata
     processing_time: Optional[float] = None
