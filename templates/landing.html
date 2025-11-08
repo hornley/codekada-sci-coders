@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rekada Lens - Smart Product Analyzer</title>
+    <meta name="description" content="Analyze food, drinks, and beauty products for personalized health insights and ingredient safety with Rekada Lens.">
+    <meta name="keywords" content="rekada lens, product analyzer, health scanner, nutrition analysis, beauty product analysis, ingredient checker, food safety">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+  </head>
+  <body>
+    
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+      <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+          <i class="fas fa-check-circle text-success me-2"></i>
+          <strong class="me-auto">Rekada Lens</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          <!-- Toast message will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Landing Page -->
+    <div class="hero-section min-vh-100 d-flex align-items-center">
+      <div class="container">
+        <div class="row justify-content-center text-center">
+          <div class="col-lg-8">
+            <div class="hero-content fade-in">
+              <img src="assets/images/Rekado Lens.png" alt="Rekado Lens Logo" class="mb-4" style="max-width: 200px; height: auto;">
+              <h1 class="display-3 fw-bold mb-4 text-black">Rekada Lens</h1>
+              <p class="lead mb-4 text-black-75">
+                Your smart companion for analyzing food, drinks, and beauty products. 
+                Get personalized insights, ingredient analysis, and health recommendations instantly.
+              </p>
+              <div class="hero-features row mt-5 mb-5">
+                <div class="col-md-4 mb-3">
+                  <i class="fas fa-utensils text-warning fs-1 mb-2"></i>
+                  <h5 class="text-black">Food Analysis</h5>
+                  <p class="text-black-50 small">Nutrition facts & health insights</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <i class="fas fa-wine-glass text-info fs-1 mb-2"></i>
+                  <h5 class="text-black">Drink Scanner</h5>
+                  <p class="text-black-50 small">Ingredient safety & nutrition</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <i class="fas fa-palette text-danger fs-1 mb-2"></i>
+                  <h5 class="text-black">Beauty Products</h5>
+                  <p class="text-black-50 small">Ingredient analysis & safety</p>
+                </div>
+              </div>
+              <button id="get-started-btn" class="btn btn-success btn-lg px-5 py-3 rounded-pill" style="background-color: #2d5a3d; border-color: #2d5a3d;" onclick="window.location.href='{{ url_for('user_setup') }}'">>
+                <i class="fas fa-rocket me-2"></i>Get Started
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+  </body>
+</html>

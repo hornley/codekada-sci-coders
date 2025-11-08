@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User Profile Setup - Rekada Lens</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body class="bg-light">
+    
+    <!-- Toast Container for Notifications -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+      <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+          <i class="fas fa-check-circle text-success me-2"></i>
+          <strong class="me-auto">Rekada Lens</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          <!-- Toast message will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- User Profile Setup -->
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+          
+          <!-- Back Button -->
+          <div class="mb-4">
+            <button id="back-to-home-btn" class="btn btn-outline-secondary">
+              <i class="fas fa-chevron-left me-2"></i>Back to Home
+            </button>
+          </div>
+
+          <!-- Progress Header -->
+          <div class="mb-4">
+            <h1 class="h2 mb-3 text-dark">Create Your Profile</h1>
+            <div class="d-flex gap-2">
+              <div class="progress-step h-2 flex-fill rounded-pill bg-success" id="step-1"></div>
+              <div class="progress-step h-2 flex-fill rounded-pill bg-secondary opacity-25" id="step-2"></div>
+              <div class="progress-step h-2 flex-fill rounded-pill bg-secondary opacity-25" id="step-3"></div>
+              <div class="progress-step h-2 flex-fill rounded-pill bg-secondary opacity-25" id="step-4"></div>
+              <div class="progress-step h-2 flex-fill rounded-pill bg-secondary opacity-25" id="step-5"></div>
+              <div class="progress-step h-2 flex-fill rounded-pill bg-secondary opacity-25" id="step-6"></div>
+            </div>
+            <p class="mt-2 text-muted">
+              Step <span id="current-step">1</span> of 6
+            </p>
+          </div>
+
+          <!-- Step 1: Basic Information -->
+          <div id="step-1-content" class="step-content">
+            <div class="card shadow-lg border-0 rounded-4">
+              <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-user me-2"></i>Basic Information</h4>
+                <p class="mb-0 small opacity-75">Let's start with some basic details about you</p>
+              </div>
+              <div class="card-body p-4">
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <label for="fullName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="fullName" placeholder="John Doe" required>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="birthday" class="form-label">Birthday</label>
+                    <input type="date" class="form-control" id="birthday">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="age" class="form-label">Age <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="age" min="13" max="120" placeholder="25" required>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Food Allergens -->
+          <div id="step-2-content" class="step-content d-none">
+            <div class="card shadow-lg border-0 rounded-4">
+              <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Food Allergens & Irritants</h4>
+                <p class="mb-0 small opacity-75">Select any food allergens or irritants you want to avoid</p>
+              </div>
+              <div class="card-body p-4" style="max-height: 500px; overflow-y: auto;">
+                
+                <!-- Animal-derived allergens -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Biological Allergens - Animal-derived</h5>
+                  <div class="row ms-3">
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="milk-allergy" value="milk">
+                        <label class="form-check-label" for="milk-allergy">Milk (casein, whey)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="eggs-allergy" value="eggs">
+                        <label class="form-check-label" for="eggs-allergy">Eggs (albumen)</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="fish-allergy" value="fish">
+                        <label class="form-check-label" for="fish-allergy">Fish (cod, salmon)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="shellfish-allergy" value="shellfish">
+                        <label class="form-check-label" for="shellfish-allergy">Shellfish (shrimp, crab, lobster)</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Plant-derived allergens -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Biological Allergens - Plant-derived</h5>
+                  <div class="row ms-3">
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="peanuts-allergy" value="peanuts">
+                        <label class="form-check-label" for="peanuts-allergy">Peanuts</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="tree-nuts-allergy" value="tree-nuts">
+                        <label class="form-check-label" for="tree-nuts-allergy">Tree nuts (almond, walnut, cashew)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="soybeans-allergy" value="soybeans">
+                        <label class="form-check-label" for="soybeans-allergy">Soybeans</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="wheat-allergy" value="wheat">
+                        <label class="form-check-label" for="wheat-allergy">Wheat (gluten)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="sesame-allergy" value="sesame">
+                        <label class="form-check-label" for="sesame-allergy">Sesame seeds</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Chemical Irritants -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Chemical Irritants</h5>
+                  <div class="row ms-3">
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="flavor-enhancers" value="flavor-enhancers">
+                        <label class="form-check-label" for="flavor-enhancers">Flavor enhancers (MSG, disodium inosinate)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="preservatives-irritant" value="preservatives">
+                        <label class="form-check-label" for="preservatives-irritant">Preservatives (sodium benzoate, sulfites)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="artificial-colors" value="artificial-colors">
+                        <label class="form-check-label" for="artificial-colors">Artificial colors (Yellow No.5, Red 40)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="artificial-sweeteners" value="artificial-sweeteners">
+                        <label class="form-check-label" for="artificial-sweeteners">Artificial sweeteners (aspartame, sucralose)</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="acids-irritant" value="acids">
+                        <label class="form-check-label" for="acids-irritant">Acids (citric acid, phosphoric acid)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="emulsifiers-irritant" value="emulsifiers">
+                        <label class="form-check-label" for="emulsifiers-irritant">Emulsifiers (lecithin, carrageenan)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="flavoring-agents" value="flavoring-agents">
+                        <label class="form-check-label" for="flavoring-agents">Flavoring agents (vanillin, ethyl maltol)</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Beauty Product Allergens -->
+          <div id="step-3-content" class="step-content d-none">
+            <div class="card shadow-lg border-0 rounded-4">
+              <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-palette me-2"></i>Beauty Product Allergens</h4>
+                <p class="mb-0 small opacity-75">Select any beauty product ingredients you're sensitive to</p>
+              </div>
+              <div class="card-body p-4" style="max-height: 500px; overflow-y: auto;">
+                
+                <!-- Fragrance-Related Allergens -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Fragrance-Related Allergens</h5>
+                  <div class="row ms-3">
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="fragrance-allergy" value="fragrance">
+                        <label class="form-check-label" for="fragrance-allergy">Fragrance / Parfum</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="limonene-allergy" value="limonene">
+                        <label class="form-check-label" for="limonene-allergy">Limonene</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="linalool-allergy" value="linalool">
+                        <label class="form-check-label" for="linalool-allergy">Linalool</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="citronellol-allergy" value="citronellol">
+                        <label class="form-check-label" for="citronellol-allergy">Citronellol</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="geraniol-allergy" value="geraniol">
+                        <label class="form-check-label" for="geraniol-allergy">Geraniol</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="eugenol-allergy" value="eugenol">
+                        <label class="form-check-label" for="eugenol-allergy">Eugenol</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="cinnamal-allergy" value="cinnamal">
+                        <label class="form-check-label" for="cinnamal-allergy">Cinnamal</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="balsam-peru-allergy" value="balsam-peru">
+                        <label class="form-check-label" for="balsam-peru-allergy">Balsam of Peru</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Preservatives -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Preservatives</h5>
+                  <div class="row ms-3">
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="parabens-allergy" value="parabens">
+                        <label class="form-check-label" for="parabens-allergy">Parabens (methylparaben, propylparaben)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="formaldehyde-allergy" value="formaldehyde">
+                        <label class="form-check-label" for="formaldehyde-allergy">Formaldehyde releasers (DMDM hydantoin)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="isothiazolinones-allergy" value="isothiazolinones">
+                        <label class="form-check-label" for="isothiazolinones-allergy">Isothiazolinones (MI, MCI)</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="phenoxyethanol-allergy" value="phenoxyethanol">
+                        <label class="form-check-label" for="phenoxyethanol-allergy">Phenoxyethanol</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="sodium-benzoate-beauty" value="sodium-benzoate-beauty">
+                        <label class="form-check-label" for="sodium-benzoate-beauty">Sodium benzoate</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="benzyl-alcohol-allergy" value="benzyl-alcohol">
+                        <label class="form-check-label" for="benzyl-alcohol-allergy">Benzyl alcohol</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Botanical & Natural Extracts -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Botanical & Natural Extracts</h5>
+                  <div class="row ms-3">
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="essential-oils-allergy" value="essential-oils">
+                        <label class="form-check-label" for="essential-oils-allergy">Essential oils (tea tree, lavender, peppermint)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="aloe-vera-allergy" value="aloe-vera">
+                        <label class="form-check-label" for="aloe-vera-allergy">Aloe vera</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="chamomile-allergy" value="chamomile">
+                        <label class="form-check-label" for="chamomile-allergy">Chamomile</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="calendula-allergy" value="calendula">
+                        <label class="form-check-label" for="calendula-allergy">Calendula</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="coconut-oil-allergy" value="coconut-oil">
+                        <label class="form-check-label" for="coconut-oil-allergy">Coconut oil</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="shea-butter-allergy" value="shea-butter">
+                        <label class="form-check-label" for="shea-butter-allergy">Shea butter</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="almond-oil-allergy" value="almond-oil">
+                        <label class="form-check-label" for="almond-oil-allergy">Almond oil</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="eucalyptus-allergy" value="eucalyptus">
+                        <label class="form-check-label" for="eucalyptus-allergy">Eucalyptus extract</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Comorbidities -->
+          <div id="step-4-content" class="step-content d-none">
+            <div class="card shadow-lg border-0 rounded-4">
+              <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Health Conditions (Comorbidities)</h4>
+                <p class="mb-0 small opacity-75">Select any existing health conditions (optional but helps personalize recommendations)</p>
+              </div>
+              <div class="card-body p-4" style="max-height: 500px; overflow-y: auto;">
+                
+                <!-- Cardiovascular -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Cardiovascular</h5>
+                  <div class="row ms-3">
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="hypertension" value="hypertension">
+                        <label class="form-check-label" for="hypertension">Hypertension (high blood pressure)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="hyperlipidemia" value="hyperlipidemia">
+                        <label class="form-check-label" for="hyperlipidemia">Hyperlipidemia (high cholesterol)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="coronary-artery-disease" value="coronary-artery-disease">
+                        <label class="form-check-label" for="coronary-artery-disease">Coronary artery disease (CAD)</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="heart-failure" value="heart-failure">
+                        <label class="form-check-label" for="heart-failure">Heart failure</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="atrial-fibrillation" value="atrial-fibrillation">
+                        <label class="form-check-label" for="atrial-fibrillation">Atrial fibrillation</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="peripheral-artery-disease" value="peripheral-artery-disease">
+                        <label class="form-check-label" for="peripheral-artery-disease">Peripheral artery disease (PAD)</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Metabolic & Endocrine -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Metabolic & Endocrine</h5>
+                  <div class="row ms-3">
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="type2-diabetes" value="type2-diabetes">
+                        <label class="form-check-label" for="type2-diabetes">Type 2 diabetes mellitus</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="obesity" value="obesity">
+                        <label class="form-check-label" for="obesity">Obesity / Metabolic syndrome</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="hypothyroidism" value="hypothyroidism">
+                        <label class="form-check-label" for="hypothyroidism">Hypothyroidism</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="hyperthyroidism" value="hyperthyroidism">
+                        <label class="form-check-label" for="hyperthyroidism">Hyperthyroidism</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="pcos" value="pcos">
+                        <label class="form-check-label" for="pcos">Polycystic ovary syndrome (PCOS)</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="gout" value="gout">
+                        <label class="form-check-label" for="gout">Gout</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Respiratory -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Respiratory</h5>
+                  <div class="row ms-3">
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="asthma" value="asthma">
+                        <label class="form-check-label" for="asthma">Asthma</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="copd" value="copd">
+                        <label class="form-check-label" for="copd">Chronic obstructive pulmonary disease (COPD)</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="chronic-bronchitis" value="chronic-bronchitis">
+                        <label class="form-check-label" for="chronic-bronchitis">Chronic bronchitis</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="sleep-apnea" value="sleep-apnea">
+                        <label class="form-check-label" for="sleep-apnea">Sleep apnea</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="pulmonary-hypertension" value="pulmonary-hypertension">
+                        <label class="form-check-label" for="pulmonary-hypertension">Pulmonary hypertension</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: Diet Preferences -->
+          <div id="step-5-content" class="step-content d-none">
+            <div class="card shadow-lg border-0 rounded-4">
+              <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-utensils me-2"></i>Diet Preferences</h4>
+                <p class="mb-0 small opacity-75">Select your dietary preferences</p>
+              </div>
+              <div class="card-body p-4">
+                
+                <!-- Plant-Based Diets -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Plant-Based Diets</h5>
+                  <div class="ms-3">
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" id="plant-based" value="plant-based">
+                      <label class="form-check-label" for="plant-based">Plant-Based</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Animal-Based / Low-Carb Diets -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Animal-Based / Low-Carb Diets</h5>
+                  <div class="ms-3">
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" id="animal-based-low-carb" value="animal-based-low-carb">
+                      <label class="form-check-label" for="animal-based-low-carb">Animal-Based / Low-Carb</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Religion or Culture-Based Diets -->
+                <div class="mb-4">
+                  <h5 class="text-dark fw-bold">Religion or Culture-Based Diets</h5>
+                  <div class="row ms-3">
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="halal-diet" value="halal">
+                        <label class="form-check-label" for="halal-diet">Halal</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="kosher-diet" value="kosher">
+                        <label class="form-check-label" for="kosher-diet">Kosher</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="hindu-diet" value="hindu">
+                        <label class="form-check-label" for="hindu-diet">Hindu</label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="buddhist-diet" value="buddhist">
+                        <label class="form-check-label" for="buddhist-diet">Buddhist</label>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="rastafarian-diet" value="rastafarian">
+                        <label class="form-check-label" for="rastafarian-diet">Rastafarian</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 6: Health Preferences -->
+          <div id="step-6-content" class="step-content d-none">
+            <div class="card shadow-lg border-0 rounded-4">
+              <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-heart me-2"></i>Health Preferences</h4>
+                <p class="mb-0 small opacity-75">Select your health-related preferences</p>
+              </div>
+              <div class="card-body p-4">
+                
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" id="gluten-free" value="gluten-free">
+                      <label class="form-check-label" for="gluten-free">Gluten-free</label>
+                    </div>
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" id="lactose-free" value="lactose-free">
+                      <label class="form-check-label" for="lactose-free">Lactose-free</label>
+                    </div>
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" id="low-sodium" value="low-sodium">
+                      <label class="form-check-label" for="low-sodium">Low-sodium</label>
+                    </div>
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" id="low-fat" value="low-fat">
+                      <label class="form-check-label" for="low-fat">Low-fat</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" id="low-carb" value="low-carb">
+                      <label class="form-check-label" for="low-carb">Low-carb</label>
+                    </div>
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" id="diabetic-diet" value="diabetic-diet">
+                      <label class="form-check-label" for="diabetic-diet">Diabetic diet</label>
+                    </div>
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" id="allergen-free" value="allergen-free">
+                      <label class="form-check-label" for="allergen-free">Allergen-free</label>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Navigation Buttons -->
+          <div class="d-flex gap-3 mt-4">
+            <button id="prev-btn" class="btn btn-outline-secondary d-none">
+              <i class="fas fa-chevron-left me-2"></i>Previous
+            </button>
+            <button id="next-btn" class="btn btn-primary ms-auto">
+              Next<i class="fas fa-chevron-right ms-2"></i>
+            </button>
+            <button id="complete-btn" class="btn btn-success ms-auto d-none">
+              Complete Profile
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/user-setup.js') }}"></script>
+  </body>
+</html>
