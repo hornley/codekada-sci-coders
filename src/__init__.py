@@ -6,8 +6,9 @@ from src.main import IngredientIntelligenceAnalyzer
 from src.vision_ocr_detector import VisionOCRDetector
 from src.classifier import ProductClassifier
 from src.ingredient_analyzer import IngredientAnalyzer
-from src.models import ProductAnalysisResponse
+from src.models import ProductAnalysisResponse, UserHealthPreferences
 from src.utils import pretty_print_results, save_results_to_json
+from src.intake_tracker import IntakeTracker
 
 # OCRDetector is optional (only if PaddleOCR is installed)
 try:
@@ -19,6 +20,8 @@ try:
         "ProductClassifier",
         "IngredientAnalyzer",
         "ProductAnalysisResponse",
+        "UserHealthPreferences",
+        "IntakeTracker",
         "pretty_print_results",
         "save_results_to_json"
     ]
@@ -29,8 +32,10 @@ except ImportError:
         "ProductClassifier",
         "IngredientAnalyzer",
         "ProductAnalysisResponse",
+        "UserHealthPreferences",
+        "IntakeTracker",
         "pretty_print_results",
         "save_results_to_json"
     ]
 
-__version__ = "2.0.0"  # Updated to 2.0.0 with Vision API support
+__version__ = "3.0.0"  # Updated to 3.0.0 with Phase 2 & 3 (Personalization + Intake Tracking)

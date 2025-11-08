@@ -9,6 +9,7 @@ from typing import Dict, Optional, List
 from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
+from src.models import UserHealthPreferences
 
 # Load environment variables
 load_dotenv()
@@ -48,7 +49,8 @@ Be objective and avoid exaggeration - provide balanced assessments.
         self,
         product_type: str,
         ingredients_text: str,
-        expiration_date: Optional[str] = None
+        expiration_date: Optional[str] = None,
+        user_preferences: Optional[UserHealthPreferences] = None
     ) -> str:
         """
         Create the analysis prompt for OpenAI.
@@ -57,6 +59,7 @@ Be objective and avoid exaggeration - provide balanced assessments.
             product_type: Type of product (food/drink/beauty)
             ingredients_text: Ingredients list text
             expiration_date: Expiration date if available
+            user_preferences: User health preferences for personalized analysis
             
         Returns:
             Formatted prompt string
@@ -69,10 +72,26 @@ INGREDIENTS: {ingredients_text}
         if expiration_date:
             prompt += f"\nEXPIRATION DATE: {expiration_date}\n"
         
-        prompt += """
-Please provide a comprehensive analysis in the following JSON format:
-
-{
+        # Add user preferences if provided
+        if user_preferences:
+            prompt += "\n--- USER HEALTH PREFERENCES ---\n"
+            
+            if user_preferences.allergies:
+                prompt += f"ALLERGIES: {', '.join(user_preferences.allergies)}\n"
+            
+            if user_preferences.dietary_restrictions:
+                prompt += f"DIETARY RESTRICTIONS: {', '.join(user_preferences.dietary_restrictions)}\n"
+            
+            if user_preferences.avoid_ingredients:
+                prompt += f"INGREDIENTS TO AVOID: {', '.join(user_preferences.avoid_ingredients)}\n"
+            
+            if user_preferences.health_goals:
+                prompt += f"HEALTH GOALS: {', '.join(user_preferences.health_goals)}\n"
+            
+            prompt += "-------------------------------\n"
+        
+        # Base JSON format
+        base_format = """{
   "harmful_ingredients": [],          // Ingredients with known health risks
   "additives": [],                    // Food/cosmetic additives (E-numbers, etc.)
   "preservatives": [],                // Preservatives identified
@@ -84,8 +103,22 @@ Please provide a comprehensive analysis in the following JSON format:
   "healthiness_rating": 0,            // Scale 1-10 (1=very unhealthy, 10=very healthy)
   "expiration_valid": true,           // Is product still safe to use? (if date provided)
   "recommendation": "",               // Brief recommendation (1-2 sentences)
-  "health_suggestion": ""             // Personalized health tip (1-2 sentences)
-}
+  "health_suggestion": ""             // Personalized health tip (1-2 sentences)"""
+        
+        # Add personalization fields if user preferences provided
+        if user_preferences:
+            base_format += """,
+  "personalized_recommendation": "",  // Specific recommendation based on user's health profile
+  "safety_score_for_user": 0,        // Safety rating 1-10 specific to this user's health needs
+  "warnings_for_user": [],           // Specific warnings based on user's allergies/restrictions
+  "matches_preferences": true        // Does this product match user's dietary/health preferences?"""
+        
+        base_format += "\n}"
+        
+        prompt += f"""
+Please provide a comprehensive analysis in the following JSON format:
+
+{base_format}
 
 Important guidelines:
 - Only list ingredients that are actually present
@@ -97,6 +130,18 @@ Important guidelines:
 - Consider the product type in your analysis
 """
         
+        # Add personalization instructions if user preferences provided
+        if user_preferences:
+            prompt += """
+PERSONALIZATION REQUIREMENTS:
+- Cross-check ALL ingredients against user's allergies and restrictions
+- Provide warnings_for_user for ANY concerning ingredients specific to their profile
+- Calculate safety_score_for_user based on their health needs (may differ from general rating)
+- In personalized_recommendation, address their specific health goals and concerns
+- Set matches_preferences=false if product violates their dietary restrictions or contains allergens
+- Be very specific about WHY an ingredient is concerning for THIS user
+"""
+        
         return prompt
     
     def analyze(
@@ -104,7 +149,8 @@ Important guidelines:
         product_type: str,
         ingredients_text: str,
         expiration_date: Optional[str] = None,
-        manufacture_date: Optional[str] = None
+        manufacture_date: Optional[str] = None,
+        user_preferences: Optional[UserHealthPreferences] = None
     ) -> Dict:
         """
         Analyze ingredients using OpenAI API.
@@ -114,6 +160,7 @@ Important guidelines:
             ingredients_text: Ingredients list text
             expiration_date: Expiration date if available
             manufacture_date: Manufacture date if available
+            user_preferences: User health preferences for personalized analysis
             
         Returns:
             Structured analysis results
@@ -132,7 +179,8 @@ Important guidelines:
             prompt = self._create_analysis_prompt(
                 product_type,
                 ingredients_text,
-                expiration_date
+                expiration_date,
+                user_preferences
             )
             
             # Call OpenAI API with structured output
