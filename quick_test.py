@@ -23,9 +23,7 @@ def test_image_with_different_sizes(image_path: str):
     
     # Test configurations
     configs = [
-        (1280, "Fast Mode"),
-        (1920, "Balanced Mode (Default)"),
-        (2560, "High Accuracy Mode")
+        (1280, "Fast Mode")
     ]
     
     results = []

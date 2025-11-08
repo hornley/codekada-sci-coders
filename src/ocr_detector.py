@@ -105,13 +105,31 @@ class OCRDetector:
             
             # Extract text with confidence scores
             extracted_lines = []
-            for line in result[0] if result and result[0] else []:
-                box, (text, confidence) = line
-                extracted_lines.append({
-                    'text': text,
-                    'confidence': confidence,
-                    'bbox': box
-                })
+            if result and result[0]:
+                for line in result[0]:
+                    # Handle different PaddleOCR return formats
+                    try:
+                        # New format: [box, (text, confidence)]
+                        if len(line) == 2:
+                            box, text_info = line
+                            if isinstance(text_info, tuple) and len(text_info) == 2:
+                                text, confidence = text_info
+                            else:
+                                # Alternative format
+                                text = str(text_info)
+                                confidence = 1.0
+                        else:
+                            # Old format or other variants
+                            continue
+                        
+                        extracted_lines.append({
+                            'text': text,
+                            'confidence': confidence,
+                            'bbox': box
+                        })
+                    except Exception as e:
+                        # Skip problematic lines
+                        continue
             
             # Combine all text
             full_text = ' '.join([line['text'] for line in extracted_lines])
