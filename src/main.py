@@ -1,0 +1,267 @@
+"""
+Main Orchestration Pipeline
+Coordinates OCR detection, classification, and AI analysis.
+"""
+
+import os
+import time
+from typing import Dict, Optional
+from dotenv import load_dotenv
+
+from src.ocr_detector import OCRDetector
+from src.classifier import ProductClassifier
+from src.ingredient_analyzer import IngredientAnalyzer
+from src.models import ProductAnalysisResponse
+
+# Load environment variables
+load_dotenv()
+
+
+class IngredientIntelligenceAnalyzer:
+    """Main class that orchestrates the complete analysis pipeline."""
+    
+    def __init__(
+        self,
+        openai_api_key: Optional[str] = None,
+        ocr_lang: str = 'en',
+        use_gpu: bool = False,
+        max_image_dimension: int = 1920
+    ):
+        """
+        Initialize the analyzer pipeline.
+        
+        Args:
+            openai_api_key: OpenAI API key
+            ocr_lang: Language for OCR
+            use_gpu: Whether to use GPU for OCR
+            max_image_dimension: Max image size for OCR processing (default: 1920)
+                                Recommended: 1280 (fast), 1920 (balanced), 2560 (accurate)
+        """
+        # Initialize components
+        self.ocr_detector = OCRDetector(
+            lang=ocr_lang, 
+            use_gpu=use_gpu,
+            max_image_dimension=max_image_dimension
+        )
+        self.classifier = ProductClassifier()
+        self.analyzer = IngredientAnalyzer(api_key=openai_api_key)
+    
+    def analyze_product_image(self, image_path: str) -> ProductAnalysisResponse:
+        """
+        Complete analysis pipeline: OCR → Classification → AI Analysis.
+        
+        Args:
+            image_path: Path to product image
+            
+        Returns:
+            Complete analysis response
+        """
+        start_time = time.time()
+        
+        try:
+            # Step 1: OCR Detection
+            print("🔍 Step 1: Extracting text from image...")
+            ocr_result = self.ocr_detector.detect(image_path)
+            
+            if not ocr_result['success']:
+                return ProductAnalysisResponse(
+                    success=False,
+                    product_type='unknown',
+                    error=f"OCR failed: {ocr_result.get('error', 'Unknown error')}",
+                    processing_time=time.time() - start_time
+                )
+            
+            print(f"   ✓ Extracted product name: {ocr_result.get('product_name', 'Unknown')}")
+            print(f"   ✓ Found ingredients: {'Yes' if ocr_result.get('ingredients_text') else 'No'}")
+            
+            # Step 2: Product Classification
+            print("\n📊 Step 2: Classifying product type...")
+            classification = self.classifier.classify(
+                full_text=ocr_result['full_text'],
+                ingredients_text=ocr_result.get('ingredients_text'),
+                product_name=ocr_result.get('product_name')
+            )
+            
+            print(f"   ✓ Product type: {classification['product_type']} "
+                  f"(confidence: {classification['confidence']})")
+            
+            # Step 3: AI Analysis
+            if not ocr_result.get('ingredients_text'):
+                print("\n⚠️  Warning: No ingredients found, skipping AI analysis")
+                return ProductAnalysisResponse(
+                    success=True,
+                    product_type=classification['product_type'],
+                    product_name=ocr_result.get('product_name'),
+                    classification_confidence=classification['confidence'],
+                    expiration_date=ocr_result.get('expiration_date'),
+                    manufacture_date=ocr_result.get('manufacture_date'),
+                    error="No ingredients found for detailed analysis",
+                    processing_time=time.time() - start_time
+                )
+            
+            print("\n🧠 Step 3: Analyzing ingredients with AI...")
+            analysis = self.analyzer.analyze(
+                product_type=classification['product_type'],
+                ingredients_text=ocr_result['ingredients_text'],
+                expiration_date=ocr_result.get('expiration_date'),
+                manufacture_date=ocr_result.get('manufacture_date')
+            )
+            
+            if not analysis['success']:
+                return ProductAnalysisResponse(
+                    success=False,
+                    product_type=classification['product_type'],
+                    product_name=ocr_result.get('product_name'),
+                    classification_confidence=classification['confidence'],
+                    ingredients_text=ocr_result.get('ingredients_text'),
+                    expiration_date=ocr_result.get('expiration_date'),
+                    error=f"Analysis failed: {analysis.get('error', 'Unknown error')}",
+                    processing_time=time.time() - start_time
+                )
+            
+            print(f"   ✓ Healthiness rating: {analysis.get('healthiness_rating', 'N/A')}/10")
+            print(f"   ✓ Harmful ingredients: {len(analysis.get('harmful_ingredients', []))}")
+            print(f"   ✓ Allergens: {len(analysis.get('allergens', []))}")
+            
+            # Step 4: Combine results
+            processing_time = time.time() - start_time
+            print(f"\n✅ Analysis complete in {processing_time:.2f} seconds\n")
+            
+            return ProductAnalysisResponse(
+                success=True,
+                product_type=classification['product_type'],
+                product_name=ocr_result.get('product_name'),
+                classification_confidence=classification['confidence'],
+                ingredients_text=ocr_result.get('ingredients_text'),
+                expiration_date=ocr_result.get('expiration_date'),
+                manufacture_date=ocr_result.get('manufacture_date'),
+                harmful_ingredients=analysis.get('harmful_ingredients', []),
+                additives=analysis.get('additives', []),
+                preservatives=analysis.get('preservatives', []),
+                irritants=analysis.get('irritants', []),
+                allergens=analysis.get('allergens', []),
+                chemicals=analysis.get('chemicals', []),
+                certifications=analysis.get('certifications', []),
+                fda_approval=analysis.get('fda_approval', 'Unverified'),
+                healthiness_rating=analysis.get('healthiness_rating', 5),
+                expiration_valid=analysis.get('expiration_valid', True),
+                recommendation=analysis.get('recommendation', ''),
+                health_suggestion=analysis.get('health_suggestion', ''),
+                processing_time=processing_time
+            )
+        
+        except Exception as e:
+            return ProductAnalysisResponse(
+                success=False,
+                product_type='unknown',
+                error=f"Pipeline error: {str(e)}",
+                processing_time=time.time() - start_time
+            )
+    
+    def analyze_from_text(
+        self,
+        ingredients_text: str,
+        product_type: Optional[str] = None,
+        expiration_date: Optional[str] = None
+    ) -> ProductAnalysisResponse:
+        """
+        Analyze ingredients from text directly (skip OCR).
+        
+        Args:
+            ingredients_text: Ingredients list as text
+            product_type: Optional product type (will classify if not provided)
+            expiration_date: Optional expiration date
+            
+        Returns:
+            Analysis response
+        """
+        start_time = time.time()
+        
+        try:
+            # Classify if not provided
+            if not product_type:
+                print("📊 Classifying product type...")
+                classification = self.classifier.classify(
+                    full_text=ingredients_text,
+                    ingredients_text=ingredients_text
+                )
+                product_type = classification['product_type']
+                confidence = classification['confidence']
+                print(f"   ✓ Product type: {product_type} (confidence: {confidence})")
+            else:
+                confidence = 1.0
+            
+            # Analyze ingredients
+            print("🧠 Analyzing ingredients with AI...")
+            analysis = self.analyzer.analyze(
+                product_type=product_type,
+                ingredients_text=ingredients_text,
+                expiration_date=expiration_date
+            )
+            
+            if not analysis['success']:
+                return ProductAnalysisResponse(
+                    success=False,
+                    product_type=product_type,
+                    classification_confidence=confidence,
+                    ingredients_text=ingredients_text,
+                    error=analysis.get('error', 'Analysis failed'),
+                    processing_time=time.time() - start_time
+                )
+            
+            processing_time = time.time() - start_time
+            print(f"✅ Analysis complete in {processing_time:.2f} seconds\n")
+            
+            return ProductAnalysisResponse(
+                success=True,
+                product_type=product_type,
+                classification_confidence=confidence,
+                ingredients_text=ingredients_text,
+                expiration_date=expiration_date,
+                harmful_ingredients=analysis.get('harmful_ingredients', []),
+                additives=analysis.get('additives', []),
+                preservatives=analysis.get('preservatives', []),
+                irritants=analysis.get('irritants', []),
+                allergens=analysis.get('allergens', []),
+                chemicals=analysis.get('chemicals', []),
+                certifications=analysis.get('certifications', []),
+                fda_approval=analysis.get('fda_approval', 'Unverified'),
+                healthiness_rating=analysis.get('healthiness_rating', 5),
+                expiration_valid=analysis.get('expiration_valid', True),
+                recommendation=analysis.get('recommendation', ''),
+                health_suggestion=analysis.get('health_suggestion', ''),
+                processing_time=processing_time
+            )
+        
+        except Exception as e:
+            return ProductAnalysisResponse(
+                success=False,
+                product_type=product_type or 'unknown',
+                classification_confidence=0.0,
+                ingredients_text=ingredients_text,
+                error=f"Analysis error: {str(e)}",
+                processing_time=time.time() - start_time
+            )
+
+
+if __name__ == "__main__":
+    import sys
+    
+    # Example usage
+    if len(sys.argv) < 2:
+        print("Usage: python main.py <image_path>")
+        sys.exit(1)
+    
+    image_path = sys.argv[1]
+    
+    # Initialize analyzer
+    analyzer = IngredientIntelligenceAnalyzer()
+    
+    # Run analysis
+    result = analyzer.analyze_product_image(image_path)
+    
+    # Print results
+    print("\n" + "="*60)
+    print("ANALYSIS RESULTS")
+    print("="*60)
+    print(result.model_dump_json(indent=2))

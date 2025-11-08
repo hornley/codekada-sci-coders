@@ -1,0 +1,28 @@
+{
+  "name": "ingredient-intelligence-analyzer",
+  "version": "1.0.0",
+  "description": "AI-powered ingredient analysis system for food, drink, and beauty products",
+  "main": "src/main.py",
+  "scripts": {
+    "test": "python test_installation.py",
+    "example": "python example.py",
+    "analyze": "python -m src.main"
+  },
+  "keywords": [
+    "ingredient-analysis",
+    "ocr",
+    "openai",
+    "food-safety",
+    "allergen-detection",
+    "health-analysis"
+  ],
+  "author": "hornley",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hornley/codekada-sci-coders.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "python": ">=3.8"
+  }
+}
